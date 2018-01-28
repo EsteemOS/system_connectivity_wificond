@@ -228,6 +228,10 @@ bool NetlinkManager::Start() {
   if (!SubscribeToEvents(NL80211_MULTICAST_GROUP_MLME)) {
     return false;
   }
+  // Subscribe kernel NL80211 broadcast of vendor events.
+  if (!SubscribeToEvents(NL80211_MULTICAST_GROUP_VENDOR)) {
+    return false;
+  }
 
   started_ = true;
   return true;
@@ -517,13 +521,62 @@ void NetlinkManager::BroadcastHandler(unique_ptr<const NL80211Packet> packet) {
         LOG(WARNING) << "Failed to get mac address from station event";
         return;
       }
-      if (command == NL80211_CMD_NEW_STATION) {
-        handler->second(NEW_STATION, mac_address);
-      } else {
+      if (command == NL80211_CMD_DEL_STATION) {
         handler->second(DEL_STATION, mac_address);
       }
     }
     return;
+  }
+  if (command == NL80211_CMD_VENDOR) {
+    OnReceiveVendorCmd(std::move(packet));
+    return;
+  }
+}
+
+void NetlinkManager::OnReceiveVendorCmd(unique_ptr<const NL80211Packet> packet) {
+  uint32_t if_index, vendor_id, subcmd, sta_flags = 0;
+
+  if (!packet->GetAttributeValue(NL80211_ATTR_VENDOR_ID, &vendor_id)) {
+    LOG(ERROR) << "Failed to get vendor id from vendor notification";
+    return;
+  }
+
+  if (!packet->GetAttributeValue(NL80211_ATTR_VENDOR_SUBCMD, &subcmd)) {
+    LOG(ERROR) << "Failed to get subcmd from vendor notification id "
+               << vendor_id;
+    return;
+  }
+
+  if (vendor_id == OUI_QCA && subcmd == QCA_NL80211_VENDOR_SUBCMD_LINK_PROPERTIES) {
+
+    if (!packet->GetAttributeValue(NL80211_ATTR_IFINDEX, &if_index)) {
+      LOG(ERROR) << "Failed to get interface index from scan notification";
+      return;
+    }
+
+    NL80211NestedAttr vendor_data(0);
+    if (!packet->GetAttribute(NL80211_ATTR_VENDOR_DATA, &vendor_data)) {
+      LOG(ERROR) << "Failed to get vendor data from notification";
+      return;
+    }
+
+    if (!vendor_data.GetAttributeValue(QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_STA_FLAGS, &sta_flags)) {
+          LOG(ERROR) << "Failed to get vendor sta_flag";
+          return;
+    }
+
+    // Check for Authorize flag
+    if (sta_flags & (1 << NL80211_STA_FLAG_AUTHORIZED)) {
+      vector<uint8_t> sta_mac;
+      if (!vendor_data.GetAttributeValue(QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_STA_MAC, &sta_mac)) {
+          LOG(ERROR) << "Failed to get vendor sta_mac";
+          return;
+      }
+      const auto handler = on_station_event_handler_.find(if_index);
+      if (handler != on_station_event_handler_.end()) {
+        handler->second(NEW_STATION, sta_mac);
+      }
+    }
   }
 }
 
