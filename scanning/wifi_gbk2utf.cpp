@@ -133,7 +133,6 @@ static bool __isGBKString(const unsigned char *str, int length)
 void wifigbk_dumpSsid(const char* tag, const vector<uint8_t>& ssid)
 {
     char strbuf[200] = {0};
-    char *display = NULL;
     size_t i;
     size_t len_show;
 
@@ -145,10 +144,9 @@ void wifigbk_dumpSsid(const char* tag, const vector<uint8_t>& ssid)
 
         for (i = 0; i < len_show; i++)
            snprintf(&strbuf[i * 3], 4, " %02x", bytes[i]);
-        display = strbuf;
     }
 
-    LOG(INFO) << tag << "[len=" << len << "] " << display;
+    LOG(INFO) << tag << "[len=" << len << "] " << strbuf;
 }
 
 void wifigbk_dumpHistory() {
