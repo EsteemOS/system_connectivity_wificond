@@ -133,6 +133,9 @@ bool ScanUtils::GetScanResult(uint32_t interface_index,
     }
     out_scan_results->push_back(std::move(scan_result));
   }
+#ifdef CONFIG_WIFI_GBK
+  wifigbk_ageOutHistory();
+#endif
   return true;
 }
 

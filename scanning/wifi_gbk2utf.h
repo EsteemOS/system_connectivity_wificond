@@ -41,6 +41,7 @@ namespace android {
 struct accessPointObjectItem {
     vector<uint8_t> ssid;
     vector<uint8_t> utf_ssid;
+    int tictok;
     struct  accessPointObjectItem *pNext;
 };
 
@@ -55,6 +56,8 @@ extern int wifigbk_toUtf(const vector<uint8_t>& ssid, vector<uint8_t>* utf_ssid)
 extern int wifigbk_getFromHistory(const vector<uint8_t>& in_ssid, vector<uint8_t>& out_ssid);
 
 extern void wifigbk_addToHistory(const vector<uint8_t>& ssid, const vector<uint8_t>& utf_ssid);
+
+extern void wifigbk_ageOutHistory();
 
 extern void wifigbk_dumpSsid(const char* tag, const vector<uint8_t>& ssid);
 
