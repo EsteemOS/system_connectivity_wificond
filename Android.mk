@@ -59,9 +59,7 @@ LOCAL_MODULE := libwificond
 LOCAL_CPPFLAGS := $(wificond_cpp_flags)
 LOCAL_CFLAGS := $(L_CPPFLAGS)
 LOCAL_C_INCLUDES := $(wificond_includes)
-ifeq ($(BOARD_HAS_QCOM_WLAN), true)
-  LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/sdk/softap/include
-endif
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/sdk/softap/include
 LOCAL_SRC_FILES := \
     ap_interface_binder.cpp \
     ap_interface_impl.cpp \
